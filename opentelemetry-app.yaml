@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector
+data:
+  collector.yaml: |
+    receivers:
+      zipkin:
+        endpoint: "0.0.0.0:9411"
+    exporters:
+      alibabacloud_logservice/sls-trace:
+        endpoint: "cn-hangzhou-intranet.log.aliyuncs.com"   
+        project: "ngiq-cn-pnt-log"               
+        logstore: "ngiq-cn-pnt-trace-traces"              
+        ecs_ram_role: "pnt-CodeRole"
+    service:
+      pipelines:
+        traces:
+          receivers: [zipkin]
+          exporters: [alibabacloud_logservice/sls-trace]
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+      annotations:
+        k8s.aliyun.com/eci-ram-role-name: pnt-CodeRole
+        k8s.aliyun.com/eci-image-cache: "true"
+    spec:
+      volumes:
+        - name: otc-internal
+          configMap:
+            name: otel-collector
+            items:
+              - key: collector.yaml
+                path: collector.yaml
+            defaultMode: 420
+      containers:
+        - name: otel-collector
+          image: ngiq-registry.cn-hangzhou.cr.aliyuncs.com/ngiq-cr/opentelemetry-collector-contrib:latest
+          args:
+            - '--config=/conf/collector.yaml'
+          resources:
+            limits:
+              cpu: '1'
+              memory: 2Gi
+            requests:
+              cpu: '1'
+              memory: 1Gi
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: otc-internal
+              mountPath: /conf
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+spec:
+  selector:
+    app: otel-collector
+  ports:
+  - port: 9411
+    targetPort: 9411
+  type: ClusterIP
+
+---
+
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: otel-collector
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: otel-collector
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: memory
+      targetAverageUtilization: 70

@@ -1,0 +1,22 @@
+apiVersion: opentelemetry.io/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel
+  namespace: pnt
+spec:
+  image: otel/opentelemetry-collector-contrib:latest
+  config: |
+    receivers:
+      zipkin:
+        endpoint: "0.0.0.0:9411"
+    exporters:
+      alibabacloud_logservice/sls-trace:
+        endpoint: "cn-hangzhou-intranet.log.aliyuncs.com"   
+        project: "ngiq-cn-pnt-log"               
+        logstore: "ngiq-cn-pnt-trace-traces"              
+        ecs_ram_role: "pnt-CodeRole"
+    service:
+      pipelines:
+        traces:
+          receivers: [zipkin]
+          exporters: [alibabacloud_logservice/sls-trace]
