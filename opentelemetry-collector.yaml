@@ -2,9 +2,9 @@ apiVersion: opentelemetry.io/v1alpha1
 kind: OpenTelemetryCollector
 metadata:
   name: otel
-  namespace: pnt
 spec:
-  image: otel/opentelemetry-collector-contrib:latest
+  # image: otel/opentelemetry-collector-contrib:latest
+  image: otel/opentelemetry-collector-contrib:latest 
   config: |
     receivers:
       zipkin:
@@ -14,7 +14,8 @@ spec:
         endpoint: "cn-hangzhou-intranet.log.aliyuncs.com"   
         project: "ngiq-cn-pnt-log"               
         logstore: "ngiq-cn-pnt-trace-traces"              
-        ecs_ram_role: "pnt-CodeRole"
+        access_key_id: "xxxx"
+        access_key_secret: "xxxx"
     service:
       pipelines:
         traces:

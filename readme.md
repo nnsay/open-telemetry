@@ -1,6 +1,6 @@
 # 0. 说明
 
-该文档参考阿里云教程使用opentelemetry-operator-manager进行collector的创建和维护, 该方式和直接使用collector镜像方式大同小异, 只是manager本质是controller, 无法在创建云资源的时候附加特殊的注解信息, 例如k8s.aliyun.com/eci-ram-role-name. 所以collector的ecs_ram_role方式跑不通, 但可以使用ak/as方式进行配置collector. **该方式未完整测试**.
+该文档参考阿里云教程使用opentelemetry-operator-manager进行collector的创建和维护, 该方式和直接使用collector镜像方式大同小异, 只是manager本质是controller, 无法在创建云资源的时候附加特殊的注解信息, 例如k8s.aliyun.com/eci-ram-role-name. 所以collector的ecs_ram_role方式跑不通, 但可以使用ak/as方式进行配置collector. **该方式测试后有未解决问题, pod假死**.
 
 # 1. 安装 Operator
 
@@ -75,20 +75,30 @@
 ```
 kubectl delete -f opentelemetry-instrument.yaml
 kubectl delete -f opentelemetry-collector.yaml
+kubectl delete -f opentelemetry-operator.yaml
+kubectl delete -f cert-manager.yaml
 
+kubectl apply -f cert-manager.yaml
 kubectl apply -f opentelemetry-operator.yaml
 kubectl apply -f opentelemetry-collector.yaml
+kubectl apply -f opentelemetry-instrument.yaml
 ```
 
 
 # 2. 应用配置
 
-- 容器配置环境变量
+- 容器配置环境变量(nodejs)
+环境变量: 
 ```
-spring.zipkin.enabled=true
-spring.zipkin.base-url=http://otel-collector:9411/
+- name: OTEL_RESOURCE_ATTRIBUTES
+  value: service.name=app-server,service.namespace=odin
+```
+注解:
+```
+instrumentation.opentelemetry.io/inject-nodejs: "true"
 ```
 
+ERROR: 配置后pod重启, 原来一个container的pod变成了两个, 第一个是初始化容器, 之后pod状态变为`running`但是实际上不Work, 假死状态.
 # 3. 参考资料
 - [接入OpenTelemetry Trace数据](https://help.aliyun.com/document_detail/208915.html)
 - [如何在Kubernetes集群中自动安装OpenTelemetry探针](https://help.aliyun.com/document_detail/378116.html)

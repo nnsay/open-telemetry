@@ -2,17 +2,16 @@ apiVersion: opentelemetry.io/v1alpha1
 kind: Instrumentation
 metadata:
   name: ngiq-instrumentation
-  namespace: pnt
 spec:
   exporter:
-    endpoint: http://otel-collector:55681
+    endpoint: http://otel-collector:9411
   propagators:
     - tracecontext
     - baggage
     - b3
-  java:
-    image: ngiq-registry.cn-hangzhou.cr.aliyuncs.com/ngiq-cr/autoinstrumentation-java:latest
+  # java:
+  #   image: ngiq-registry.cn-hangzhou.cr.aliyuncs.com/ngiq-cr/autoinstrumentation-java:latest
   nodejs:
     image: ngiq-registry.cn-hangzhou.cr.aliyuncs.com/ngiq-cr/autoinstrumentation-nodejs:latest
-  python:
-    image: ngiq-registry.cn-hangzhou.cr.aliyuncs.com/ngiq-cr/autoinstrumentation-python:latest
+  # python:
+  #   image: ngiq-registry.cn-hangzhou.cr.aliyuncs.com/ngiq-cr/autoinstrumentation-python:latest
